@@ -1,0 +1,8 @@
+# DNSログファイル（自分の閲覧履歴）を絶対にアップロードしない
+*.csv
+raw.json
+debug_info.txt
+
+# Pythonのキャッシュなど
+__pycache__/
+*.py[cod]
