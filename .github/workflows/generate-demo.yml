@@ -2,33 +2,34 @@ name: Generate Live Demo Report
 
 on:
   schedule:
-    - cron: '45 22 * * 0' # 毎週月曜 日本時間 07:15
+    - cron: '45 22 * * 0' 
   workflow_dispatch:
 
 permissions:
-  contents: write # これが Push に不可欠です
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6 # Node.js 24 対応
+        uses: actions/checkout@v6
         with:
-          # 自分自身への Push を許可するため、明示的にトークンを渡します
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v6 # Node.js 24 対応
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Generate Sample Report
         run: python scripts/generate_sample.py
 
       - name: Commit and Push if changed
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add docs/sample-report.md
-          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: Update live demo report" && git push)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: Update live demo report"
+          file_pattern: docs/sample-report.md
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
