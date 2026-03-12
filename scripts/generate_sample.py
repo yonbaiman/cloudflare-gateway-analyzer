@@ -9,7 +9,6 @@ def generate_sample():
 
     # 2. ダミーデータの生成 (24時間分)
     hours = [f"{h}h" for h in range(24)]
-    # 本物に近い挙動: 日中はクエリが多く、夜間は少ない
     allow_data = [random.randint(20, 50) if 0 <= i <= 6 else random.randint(100, 300) for i in range(24)]
     block_data = [random.randint(0, 5) if 0 <= i <= 6 else random.randint(5, 20) for i in range(24)]
 
@@ -28,17 +27,49 @@ def generate_sample():
         ("Device C (Mobile)", 250, "12.5%")
     ]
 
-    # 4. Markdown の構築 (analyze summary.pdf のレイアウトを再現)
-    md = f"""# Cloudflare Gateway Daily Insights 🛡️
+    # 4. Markdown の構築
+    # f-string の中でのバックティック競合を避けるため、パーツごとに結合します
+    header = f"# Cloudflare Gateway Daily Insights 🛡️\n\n"
+    header += f"> **Report Date:** {date_str} (JST)  \n"
+    header += f"> *This is an automatically generated sample report using anonymized data.*\n\n"
 
-> **Report Date:** {date_str} (JST)  
-> *This is an automatically generated sample report using anonymized data.*
+    # Mermaid グラフセクション (バックティックを安全に扱うため f-string を分離)
+    mermaid_section = "## 📈 DNS Queries Timeline (UTC)\n"
+    mermaid_section += "```mermaid\n"
+    mermaid_section += "xychart-beta\n"
+    mermaid_section += "    title \"24-Hour Traffic Trend (Allow vs Block)\"\n"
+    mermaid_section += f"    x-axis {str(hours).replace(\"'\", '\"')}\n"
+    mermaid_section += "    y-axis \"Number of Queries\"\n"
+    mermaid_section += f"    bar {allow_data}\n"
+    mermaid_section += f"    line {block_data}\n"
+    mermaid_section += "```\n"
+    mermaid_section += "*Graph: 🟦 Bars = Allowed Queries, 🟥 Line = Blocked Queries*\n\n---\n\n"
 
-## 📈 DNS Queries Timeline (UTC)
-```mermaid
-xychart-beta
-    title "24-Hour Traffic Trend (Allow vs Block)"
-    x-axis {str(hours).replace("'", '"')}
-    y-axis "Number of Queries"
-    bar {allow_data}
-    line {block_data}
+    # テーブルセクション
+    table_blocked = "## 🚫 Top Blocked Domains (Top 5)\n"
+    table_blocked += "| Rank | Domain | Count |\n| :--- | :--- | :--- |\n"
+    for i, (domain, count) in enumerate(top_blocked, 1):
+        table_blocked += f"| {i} | `{domain}` | {count} |\n"
+    table_blocked += "\n---\n\n"
+
+    table_location = "## 📍 Statistics by Location (Source)\n"
+    table_location += "| Location / Device | Total Queries | Share (%) |\n| :--- | :--- | :--- |\n"
+    for loc, count, share in locations:
+        table_location += f"| {loc} | {count} | {share} |\n"
+
+    footer = "\n---\n## 📦 Artifacts\n"
+    footer += f"- [ ] `dns-analytics-csv-{date_str}.zip` (Sample data only)\n\n"
+    footer += "---\n**Developed by [yonbaiman](https://github.com/yonbaiman) / [yonbaiman.cc](https://yonbaiman.cc)**\n"
+
+    # 全てを結合
+    full_markdown = header + mermaid_section + table_blocked + table_location + footer
+
+    # 5. ファイルへの書き出し
+    os.makedirs("docs", exist_ok=True)
+    with open("docs/sample-report.md", "w", encoding="utf-8") as f:
+        f.write(full_markdown)
+    
+    print(f"✅ Successfully generated: docs/sample-report.md")
+
+if __name__ == "__main__":
+    generate_sample()
