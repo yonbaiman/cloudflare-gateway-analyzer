@@ -21,7 +21,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6 # Node.js 24 対応
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Generate Sample Report
         run: python scripts/generate_sample.py
