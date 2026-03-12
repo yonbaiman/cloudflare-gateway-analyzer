@@ -1,0 +1,31 @@
+name: Generate Live Demo Report
+
+on:
+  schedule:
+    - cron: '15 22 * * 0' # 毎週月曜 日本時間 07:15 (22:15 UTC)
+  workflow_dispatch: # 手動実行も可能にする
+
+permissions:
+  contents: write # リポジトリへの書き込み権限を許可
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Generate Sample Report
+        run: python scripts/generate_sample.py
+
+      - name: Commit and Push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/sample-report.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: Update live demo report" && git push)
