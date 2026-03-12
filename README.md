@@ -1,7 +1,7 @@
 # Cloudflare Gateway Log Analyzer 🛡️
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://www.python.org/)
+[! [License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[! [Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://www.python.org/)
 
 **Break the "Free Tier" limit. Export detailed DNS logs and visualize your network security.**
 **無料プランの壁を越える。詳細なDNSログを抽出し、ネットワークセキュリティを可視化します。**
@@ -27,26 +27,67 @@ Instead of using real private data, this project provides a **Live Demo** genera
 
 ## 🔒 Security First: Two-Repo Architecture / セキュリティ設計
 
+DNSログには個人の閲覧履歴が含まれるため、以下の分離アーキテクチャを採用しています。
+
 1. **Public Repo (This one)**: Manages core analysis logic. Contains no personal data.
+   (解析ロジックのみを管理し、個人データは含みません。)
 2. **Private Repo (Yours)**: For execution and private log storage.
+   (設定を保存し、解析結果を自分だけに保持する実行用リポジトリです。)
 
 ---
 
 ## 🚀 Quick Start / セットアップ手順
 
-### 1. Prepare Cloudflare
+### 1. Prepare Cloudflare / Cloudflareでの準備
 - **`CLOUDFLARE_API_TOKEN`**: Create a token with `Zero Trust > Read` permissions.
 - **`CLOUDFLARE_ACCOUNT_ID`**: Found in your dashboard.
 
-### 2. Setup Private Repo
-1. Create a new **Private** GitHub repository.
-2. Add secrets to `Settings > Secrets and variables > Actions`.
+### 2. Setup Private Repo / 実行用リポジトリの作成
+1. Create a new **Private** GitHub repository. (新しく「非公開」リポジトリを作成)
+2. Add secrets to `Settings > Secrets and variables > Actions`. (Secretsに上記2つを登録)
 
-### 3. Create Workflow
-Create `.github/workflows/monitor.yml` in your private repo and paste the provided code.
+### 3. Create Workflow / ワークフローの作成
+Create `.github/workflows/monitor.yml` in your **private** repo and paste the code below:
+(非公開リポジトリに `.github/workflows/monitor.yml` を作成し、以下のコードを貼り付けます)
 
-### 4. View Your Reports
-Check the **Actions** tab and **Step Summary** after the run.
+```yaml
+name: Private DNS Monitor
+on:
+  schedule:
+    - cron: '45 22 * * *' # 07:45 JST
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Core Logic
+        uses: actions/checkout@v6
+        with:
+          repository: 'yonbaiman/cloudflare-gateway-analyzer'
+          
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Run Harvester
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python scripts/harvester.py
+
+      - name: Save Secure Logs
+        uses: actions/upload-artifact@v7
+        with:
+          name: dns-analytics-csv
+          path: dns_logs_summary.csv
+          retention-days: 7
+```
+
+### 4. View Your Reports / 結果の確認方法
+1. Go to the **Actions** tab in your private repository.
+2. Click the latest run to view the **Step Summary** (Mermaid charts & tables).
 
 ---
 
