@@ -1,7 +1,7 @@
 # Cloudflare Gateway Log Analyzer 🛡️
 
-[! [License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[! [Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://www.python.org/)
 
 **Break the "Free Tier" limit. Export detailed DNS logs and visualize your network security.**
 **無料プランの壁を越える。詳細なDNSログを抽出し、ネットワークセキュリティを可視化します。**
@@ -94,3 +94,4 @@ jobs:
 ## 📄 License & Author
 - **Author**: [yonbaiman](https://github.com/yonbaiman) / [yonbaiman.cc](https://yonbaiman.cc)
 - **License**: Apache License 2.0
+
