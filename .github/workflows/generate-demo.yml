@@ -27,7 +27,7 @@ jobs:
         run: python scripts/generate_sample.py
 
       - name: Commit and Push if changed
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: Update live demo report"
           file_pattern: docs/sample-report.md
