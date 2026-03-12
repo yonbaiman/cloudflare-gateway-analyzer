@@ -60,6 +60,7 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout Core Logic
         uses: actions/checkout@v6
@@ -69,7 +70,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Run Harvester
         env:
@@ -94,4 +95,5 @@ jobs:
 ## 📄 License & Author
 - **Author**: [yonbaiman](https://github.com/yonbaiman) / [yonbaiman.cc](https://yonbaiman.cc)
 - **License**: Apache License 2.0
+
 
