@@ -3,73 +3,87 @@ import random
 import os
 
 def generate_sample():
-    # 1. 日本時間の現在日付を取得 (JST)
-    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    date_str = now.strftime("%Y-%m-%d")
-
-    # 2. ダミーデータの生成 (24時間分)
-    hours = [f"{h}h" for h in range(24)]
-    allow_data = [random.randint(20, 50) if 0 <= i <= 6 else random.randint(100, 300) for i in range(24)]
-    block_data = [random.randint(0, 5) if 0 <= i <= 6 else random.randint(5, 20) for i in range(24)]
-
-    # 3. ダミーのドメインとロケーション
-    top_blocked = [
-        ("ads.example.com", 154),
-        ("tracker.generic-analytics.net", 98),
-        ("malicious-sample.io", 45),
-        ("social-telemetry.co", 32),
-        ("api.metrics-dummy.org", 12)
-    ]
+    # 1. 元のコードと同じ時間計算ロジック (JST)
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    now_jst = now_utc + datetime.timedelta(hours=9)
     
-    locations = [
-        ("Device A (Tokyo)", 1250, "62.5%"),
-        ("Device B (Osaka)", 500, "25.0%"),
-        ("Device C (Mobile)", 250, "12.5%")
+    # 24時間の時間軸リストを生成 (HH:00 形式)
+    hours_list = [(now_jst - datetime.timedelta(hours=i)).strftime('%H:00') for i in range(23, -1, -1)]
+    
+    # 2. ダミー統計データの生成
+    total_queries = 0
+    total_blocks = 0
+    hourly_stats = {h: {'allow': 0, 'block': 0} for h in hours_list}
+    
+    # ダミーロケーションデータ (元のコードのテーブル構造に対応)
+    location_data = {
+        "Home-Network": {"total": 1240, "block": 45, "top_domain": "doubleclick.net"},
+        "Mobile-VPN": {"total": 580, "block": 12, "top_domain": "analytics.google.com"},
+        "Office-PC": {"total": 890, "block": 154, "top_domain": "malware-sample.io"}
+    }
+
+    # グラフ用データの積み上げ
+    for h in hours_list:
+        allow = random.randint(50, 200)
+        block = random.randint(5, 30)
+        hourly_stats[h]['allow'] = allow
+        hourly_stats[h]['block'] = block
+        total_queries += (allow + block)
+        total_blocks += block
+
+    # 3. レポート作成 (元のコードの Markdown 構造を完全再現)
+    block_rate = (total_blocks / total_queries * 100) if total_queries > 0 else 0
+    
+    report = [
+        "### 🛡️ Cloudflare Gateway Daily Insights",
+        f"**Analyzed Period:** JST `{(now_jst - datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M')} ~ {now_jst.strftime('%m-%d %H:%M')}`",
+        "",
+        "#### 📊 Traffic Overview",
+        f"- **Total Queries**: {total_queries:,}",
+        f"- **Blocked**: {total_blocks:,} ({block_rate:.1f}%)",
+        ""
     ]
 
-    # 4. Markdown の構築
-    # f-string の中でのバックティック競合を避けるため、パーツごとに結合します
-    header = f"# Cloudflare Gateway Daily Insights 🛡️\n\n"
-    header += f"> **Report Date:** {date_str} (JST)  \n"
-    header += f"> *This is an automatically generated sample report using anonymized data.*\n\n"
+    # グラフセクション (xychart-beta)
+    x_axis_str = "[" + ", ".join(f'"{h}"' for h in hours_list) + "]"
+    allow_data_str = "[" + ", ".join(str(hourly_stats[h]['allow']) for h in hours_list) + "]"
+    block_data_str = "[" + ", ".join(str(hourly_stats[h]['block']) for h in hours_list) + "]"
 
-    # Mermaid グラフセクション (バックティックを安全に扱うため f-string を分離)
-    mermaid_section = "## 📈 DNS Queries Timeline (UTC)\n"
-    mermaid_section += "```mermaid\n"
-    mermaid_section += "xychart-beta\n"
-    mermaid_section += "    title \"24-Hour Traffic Trend (Allow vs Block)\"\n"
-    mermaid_section += f"    x-axis {str(hours).replace(\"'\", '\"')}\n"
-    mermaid_section += "    y-axis \"Number of Queries\"\n"
-    mermaid_section += f"    bar {allow_data}\n"
-    mermaid_section += f"    line {block_data}\n"
-    mermaid_section += "```\n"
-    mermaid_section += "*Graph: 🟦 Bars = Allowed Queries, 🟥 Line = Blocked Queries*\n\n---\n\n"
+    report.append("#### 📈 24-Hour Query Trends (JST)")
+    report.append("```mermaid")
+    report.append("xychart-beta")
+    report.append('    title "DNS Queries (Allow vs Block)"')
+    report.append(f'    x-axis {x_axis_str}')
+    report.append('    y-axis "Queries"')
+    report.append(f'    bar {allow_data_str}')
+    report.append(f'    line {block_data_str}')
+    report.append("```")
+    report.append("> ※ Bar = Allow, Line = Block  \n")
 
-    # テーブルセクション
-    table_blocked = "## 🚫 Top Blocked Domains (Top 5)\n"
-    table_blocked += "| Rank | Domain | Count |\n| :--- | :--- | :--- |\n"
-    for i, (domain, count) in enumerate(top_blocked, 1):
-        table_blocked += f"| {i} | `{domain}` | {count} |\n"
-    table_blocked += "\n---\n\n"
+    # ロケーションInsightsセクション (元のコードのテーブル列を再現)
+    report.append("#### 📍 Location Insights")
+    report.append("| Location | Total Queries | Blocked | Block Rate | Top Blocked Domain |")
+    report.append("| :--- | :---: | :---: | :---: | :--- |")
+    
+    for loc, stats in location_data.items():
+        l_rate = (stats['block'] / stats['total'] * 100)
+        report.append(f"| **{loc}** | {stats['total']:,} | {stats['block']:,} | {l_rate:.1f}% | `{stats['top_domain']}` |")
+    report.append("\n")
 
-    table_location = "## 📍 Statistics by Location (Source)\n"
-    table_location += "| Location / Device | Total Queries | Share (%) |\n| :--- | :--- | :--- |\n"
-    for loc, count, share in locations:
-        table_location += f"| {loc} | {count} | {share} |\n"
+    # 全体の上位ブロックドメイン
+    report.append("#### 🚫 Top 10 Blocked Domains (Global)")
+    report.append("| Count | Domain |")
+    report.append("| :--- | :--- |")
+    dummy_domains = [("doubleclick.net", 42), ("adservice.google.com", 38), ("track.evil-analytics.io", 25)]
+    for domain, count in dummy_domains:
+        report.append(f"| {count:,} | `{domain}` |")
 
-    footer = "\n---\n## 📦 Artifacts\n"
-    footer += f"- [ ] `dns-analytics-csv-{date_str}.zip` (Sample data only)\n\n"
-    footer += "---\n**Developed by [yonbaiman](https://github.com/yonbaiman) / [yonbaiman.cc](https://yonbaiman.cc)**\n"
-
-    # 全てを結合
-    full_markdown = header + mermaid_section + table_blocked + table_location + footer
-
-    # 5. ファイルへの書き出し
+    # 4. 書き出し
     os.makedirs("docs", exist_ok=True)
     with open("docs/sample-report.md", "w", encoding="utf-8") as f:
-        f.write(full_markdown)
+        f.write("\n".join(report))
     
-    print(f"✅ Successfully generated: docs/sample-report.md")
+    print("✅ Verified Sample generated at docs/sample-report.md")
 
 if __name__ == "__main__":
     generate_sample()
