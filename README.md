@@ -50,7 +50,7 @@ Create `.github/workflows/monitor.yml` in your **private** repo and paste the co
 name: Private DNS Monitor
 on:
   schedule:
-    - cron: '0 23 * * *' # 08:00 JST
+    - cron: '45 22 * * *' # 07:45 JST
   workflow_dispatch:
 
 jobs:
