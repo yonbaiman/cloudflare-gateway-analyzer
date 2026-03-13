@@ -1,18 +1,18 @@
 ### 🛡️ Cloudflare Gateway Daily Insights
-**Analyzed Period:** JST `2026-03-11 15:58 ~ 03-12 15:58`
+**Analyzed Period:** JST `2026-03-12 13:00 ~ 03-13 13:00`
 
 #### 📊 Traffic Overview
-- **Total Queries**: 3,319
-- **Blocked**: 363 (10.9%)
+- **Total Queries**: 3,777
+- **Blocked**: 401 (10.6%)
 
 #### 📈 24-Hour Query Trends (JST)
 ```mermaid
 xychart-beta
     title "DNS Queries (Allow vs Block)"
-    x-axis ["16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"]
+    x-axis ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00"]
     y-axis "Queries"
-    bar [103, 198, 134, 62, 87, 90, 184, 167, 125, 148, 108, 158, 57, 182, 135, 59, 141, 72, 133, 108, 101, 198, 137, 69]
-    line [26, 16, 27, 10, 24, 18, 10, 21, 9, 17, 12, 6, 11, 16, 25, 5, 7, 11, 22, 13, 19, 14, 6, 18]
+    bar [97, 199, 100, 174, 166, 191, 152, 95, 155, 163, 183, 130, 167, 86, 152, 189, 126, 105, 55, 180, 59, 92, 187, 173]
+    line [18, 26, 24, 6, 6, 19, 24, 30, 6, 6, 25, 8, 18, 14, 7, 30, 6, 12, 19, 23, 22, 29, 15, 8]
 ```
 > ※ Bar = Allow, Line = Block  
 
@@ -27,6 +27,13 @@ xychart-beta
 #### 🚫 Top 10 Blocked Domains (Global)
 | Count | Domain |
 | :--- | :--- |
-| 42 | `doubleclick.net` |
-| 38 | `adservice.google.com` |
-| 25 | `track.evil-analytics.io` |
+| 85 | `doubleclick.net` |
+| 72 | `adservice.google.com` |
+| 54 | `track.evil-analytics.io` |
+| 41 | `telemetry.api.unity.com` |
+| 38 | `secure-pubads.g.doubleclick.net` |
+| 31 | `analytics.facebook.com` |
+| 25 | `stats.g.doubleclick.net` |
+| 19 | `metrics.icloud.com` |
+| 12 | `api-global.netflix.com` |
+| 7 | `log.optimizely.com` |
