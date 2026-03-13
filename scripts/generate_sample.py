@@ -15,7 +15,7 @@ def generate_sample():
     total_blocks = 0
     hourly_stats = {h: {'allow': 0, 'block': 0} for h in hours_list}
     
-    # ダミーロケーションデータ (元のコードのテーブル構造に対応)
+    # ダミーロケーションデータ
     location_data = {
         "Home-Network": {"total": 1240, "block": 45, "top_domain": "doubleclick.net"},
         "Mobile-VPN": {"total": 580, "block": 12, "top_domain": "analytics.google.com"},
@@ -60,7 +60,7 @@ def generate_sample():
     report.append("```")
     report.append("> ※ Bar = Allow, Line = Block  \n")
 
-    # ロケーションInsightsセクション (元のコードのテーブル列を再現)
+    # ロケーションInsightsセクション
     report.append("#### 📍 Location Insights")
     report.append("| Location | Total Queries | Blocked | Block Rate | Top Blocked Domain |")
     report.append("| :--- | :---: | :---: | :---: | :--- |")
@@ -70,11 +70,24 @@ def generate_sample():
         report.append(f"| **{loc}** | {stats['total']:,} | {stats['block']:,} | {l_rate:.1f}% | `{stats['top_domain']}` |")
     report.append("\n")
 
-    # 全体の上位ブロックドメイン
+    # 全体の上位ブロックドメイン (10件に拡充)
     report.append("#### 🚫 Top 10 Blocked Domains (Global)")
     report.append("| Count | Domain |")
     report.append("| :--- | :--- |")
-    dummy_domains = [("doubleclick.net", 42), ("adservice.google.com", 38), ("track.evil-analytics.io", 25)]
+    
+    dummy_domains = [
+        ("doubleclick.net", 85),
+        ("adservice.google.com", 72),
+        ("track.evil-analytics.io", 54),
+        ("telemetry.api.unity.com", 41),
+        ("secure-pubads.g.doubleclick.net", 38),
+        ("analytics.facebook.com", 31),
+        ("stats.g.doubleclick.net", 25),
+        ("metrics.icloud.com", 19),
+        ("api-global.netflix.com", 12),
+        ("log.optimizely.com", 7)
+    ]
+    
     for domain, count in dummy_domains:
         report.append(f"| {count:,} | `{domain}` |")
 
