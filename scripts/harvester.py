@@ -13,56 +13,58 @@ def main():
         print("❌ Error: CF_API_TOKEN or CF_ACCOUNT_ID is not set.")
         exit(1)
 
-    # 取得期間の計算 (UTC基準)
+    all_logs = []
     now_utc = datetime.utcnow()
-    start_time = (now_utc - timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
-    end_time = now_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-    print(f"🔍 Fetching data from {start_time} to {end_time}...")
-
-    query = {
-        "query": """
-        query {
-          viewer {
-            accounts(filter: {accountTag: "%s"}) {
-              gatewayResolverQueriesAdaptiveGroups(
-                limit: 10000, 
-                filter: {datetime_geq: "%s", datetime_leq: "%s"},
-                orderBy: [datetime_DESC]
-              ) {
-                dimensions {
-                  datetime
-                  locationName
-                  queryName
-                  resolverDecision
+    
+    # === 10,000行制限の回避: 24時間を6時間×4回に分けてクエリ ===
+    for i in range(4):
+        s_diff = (i + 1) * 6
+        e_diff = i * 6
+        start_time = (now_utc - timedelta(hours=s_diff)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        end_time = (now_utc - timedelta(hours=e_diff)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        
+        print(f"🔍 Fetching {start_time} to {end_time}...")
+        
+        query = {
+            "query": """
+            query {
+              viewer {
+                accounts(filter: {accountTag: "%s"}) {
+                  gatewayResolverQueriesAdaptiveGroups(
+                    limit: 10000, 
+                    filter: {datetime_geq: "%s", datetime_leq: "%s"},
+                    orderBy: [datetime_DESC]
+                  ) {
+                    dimensions {
+                      datetime
+                      locationName
+                      queryName
+                      resolverDecision
+                    }
+                    count
+                  }
                 }
-                count
               }
             }
-          }
+            """ % (account_id, start_time, end_time)
         }
-        """ % (account_id, start_time, end_time)
-    }
 
-    url = "https://api.cloudflare.com/client/v4/graphql"
-    req = urllib.request.Request(url, data=json.dumps(query).encode('utf-8'), method='POST')
-    req.add_header('Authorization', f'Bearer {api_token}')
-    req.add_header('Content-Type', 'application/json')
+        url = "https://api.cloudflare.com/client/v4/graphql"
+        req = urllib.request.Request(url, data=json.dumps(query).encode('utf-8'), method='POST')
+        req.add_header('Authorization', f'Bearer {api_token}')
+        req.add_header('Content-Type', 'application/json')
 
-    try:
-        with urllib.request.urlopen(req) as res:
-            response_data = json.loads(res.read().decode('utf-8'))
-    except HTTPError as e:
-        print(f"❌ HTTP Error: {e.code} - {e.read().decode('utf-8')}")
-        exit(1)
-    except URLError as e:
-        print(f"❌ URL Error: {e.reason}")
-        exit(1)
+        try:
+            with urllib.request.urlopen(req) as res:
+                response_data = json.loads(res.read().decode('utf-8'))
+                batch_logs = response_data['data']['viewer']['accounts'][0]['gatewayResolverQueriesAdaptiveGroups']
+                all_logs.extend(batch_logs)
+                print(f"   -> Found {len(batch_logs)} entries")
+        except (HTTPError, URLError, KeyError, IndexError) as e:
+            print(f"   ⚠️ Warning/Error in this batch: {e}")
+            continue
 
-    try:
-        logs = response_data['data']['viewer']['accounts'][0]['gatewayResolverQueriesAdaptiveGroups']
-    except (KeyError, IndexError):
-        logs = []
+    logs = all_logs
 
     if not logs:
         write_summary("### 🛡️ Cloudflare Gateway Daily Insights\n\nNo queries found in the last 24 hours.")
@@ -71,8 +73,6 @@ def main():
 
     # === 集計用の初期化 ===
     now_jst = now_utc + timedelta(hours=9)
-    
-    # グラフ用: 直近24時間の「時間(HH:00)」リストを作成 (JST)
     hours_list = [(now_jst - timedelta(hours=i)).strftime('%H:00') for i in range(23, -1, -1)]
     hourly_stats = {h: {'allow': 0, 'block': 0} for h in hours_list}
     
@@ -90,7 +90,6 @@ def main():
         loc = item['dimensions'].get('locationName', 'Unknown')
         decision = item['dimensions']['resolverDecision']
         
-        # 判定 (2, 3, 6, 9 がブロックポリシー・セーフサーチ等による遮断)
         is_block = decision in [2, 3, 6, 9]
         decision_str = "Block" if is_block else "Allow"
 
@@ -99,7 +98,6 @@ def main():
             total_blocks += count
             global_domain_blocks[domain] = global_domain_blocks.get(domain, 0) + count
 
-        # JST時間の計算と、グラフ用の時間別集計
         jst_dt_display = "Unknown"
         if utc_dt_str:
             try:
@@ -107,7 +105,6 @@ def main():
                 jst_dt = utc_dt + timedelta(hours=9)
                 jst_dt_display = jst_dt.strftime('%Y-%m-%d %H:%M:%S')
                 
-                # グラフバケット用の丸め処理
                 hour_key = jst_dt.strftime('%H:00')
                 if hour_key in hourly_stats:
                     if is_block:
@@ -117,7 +114,6 @@ def main():
             except ValueError:
                 pass
 
-        # ロケーション別集計
         if loc not in location_stats:
             location_stats[loc] = {'total': 0, 'block': 0, 'domains': {}}
         
@@ -126,7 +122,6 @@ def main():
             location_stats[loc]['block'] += count
             location_stats[loc]['domains'][domain] = location_stats[loc]['domains'].get(domain, 0) + count
 
-        # CSV出力用データ
         csv_rows.append([jst_dt_display, loc, domain, count, decision_str])
 
     # === Markdownレポートの作成 ===
@@ -142,7 +137,6 @@ def main():
         ""
     ]
 
-    # 1. グラフセクション (Mermaid.js xychart-beta)
     x_axis_str = "[" + ", ".join(f'"{h}"' for h in hours_list) + "]"
     allow_data_str = "[" + ", ".join(str(hourly_stats[h]['allow']) for h in hours_list) + "]"
     block_data_str = "[" + ", ".join(str(hourly_stats[h]['block']) for h in hours_list) + "]"
@@ -158,12 +152,10 @@ def main():
     report.append("```")
     report.append("> ※ Bar = Allow, Line = Block  \n")
 
-    # 2. ロケーション別分析セクション
     report.append("#### 📍 Location Insights")
     report.append("| Location | Total Queries | Blocked | Block Rate | Top Blocked Domain |")
     report.append("| :--- | :---: | :---: | :---: | :--- |")
     
-    # 総クエリ数が多い順にソートしてテーブル化
     sorted_locs = sorted(location_stats.items(), key=lambda x: x[1]['total'], reverse=True)
     for loc, stats in sorted_locs:
         l_total = stats['total']
@@ -178,7 +170,6 @@ def main():
         report.append(f"| **{loc}** | {l_total:,} | {l_block:,} | {l_rate:.1f}% | {top_domain} |")
     report.append("\n")
 
-    # 3. 全体の上位ブロックドメイン
     report.append("#### 🚫 Top 10 Blocked Domains (Global)")
     report.append("| Count | Domain |")
     report.append("| :--- | :--- |")
@@ -192,7 +183,6 @@ def main():
 
     write_summary("\n".join(report))
     
-    # === CSVの出力 (変更なし) ===
     csv_filename = "dns_logs_summary.csv"
     try:
         with open(csv_filename, 'w', newline='', encoding='utf-8') as f:
@@ -211,7 +201,6 @@ def write_summary(markdown_content):
         with open(summary_file, 'a', encoding='utf-8') as f:
             f.write(markdown_content + "\n")
     else:
-        # ローカル実行時のデバッグ用
         print(markdown_content)
 
 if __name__ == "__main__":
