@@ -26,7 +26,7 @@ def main():
           viewer {
             accounts(filter: {accountTag: "%s"}) {
               gatewayResolverQueriesAdaptiveGroups(
-                limit: 10000, 
+                limit: 50000, 
                 filter: {datetime_geq: "%s", datetime_leq: "%s"},
                 orderBy: [datetime_DESC]
               ) {
