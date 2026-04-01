@@ -68,23 +68,30 @@ Create `.github/workflows/monitor.yml` in your **private** repo and paste the co
 
 ```yaml
 name: Private DNS Monitor
+
 on:
   schedule:
     - cron: '45 22 * * *' # 07:45 JST
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
-      - name: Checkout Core Logic
-        uses: actions/checkout@v6
+      - name: Checkout Analyzer Core
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           repository: 'yonbaiman/cloudflare-gateway-analyzer'
-          
+          ref: "c22769500cb195cf77e968a63b6fc1f83305f76e"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: '3.14'
 
@@ -95,7 +102,7 @@ jobs:
         run: python scripts/harvester.py
 
       - name: Save Secure Logs
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: dns-analytics-csv
           path: dns_logs_summary.csv
