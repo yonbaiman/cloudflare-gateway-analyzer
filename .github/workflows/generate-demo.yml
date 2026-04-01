@@ -2,7 +2,7 @@ name: Generate Live Demo Report
 
 on:
   schedule:
-    - cron: '45 22 * * 0' 
+    - cron: '45 22 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -12,22 +12,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
+      # ======================================================
+      # 1. Checkout repository（SHA pin）
+      # ======================================================
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ======================================================
+      # 2. Setup Python（v6.2.0 → SHA pin）
+      # ======================================================
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: '3.14'
 
+      # ======================================================
+      # 3. Generate report
+      # ======================================================
       - name: Generate Sample Report
         run: python scripts/generate_sample.py
 
+      # ======================================================
+      # 4. Commit and push changes（v7.1.0 → SHA pin）
+      # ======================================================
       - name: Commit and Push if changed
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9
         with:
           commit_message: "docs: Update live demo report"
           file_pattern: docs/sample-report.md
