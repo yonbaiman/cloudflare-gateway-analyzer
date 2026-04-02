@@ -102,7 +102,7 @@ jobs:
         run: python scripts/harvester.py
 
       - name: Save Secure Logs
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: dns-analytics-csv
           path: dns_logs_summary.csv
