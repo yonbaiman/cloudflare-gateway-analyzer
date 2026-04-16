@@ -18,12 +18,17 @@ def send_discord_alert(total_queries, blocked_count, top_domains):
     now_jst = datetime.now(UTC) + timedelta(hours=9)
     date_str = now_jst.strftime("%Y-%m-%d")
 
-    # 表示バグ回避のためバッククォート3つを文字コードから生成
-    code_fence = chr(96) * 3
+    # 通常のバッククォートを使った自然な書き方
     domain_list_str = "\n".join(top_domains) if top_domains else "None"
-    domains_value = f"{code_fence}text\n{domain_list_str}\n{code_fence}"
+    domains_value = f"```text\n{domain_list_str}\n```"
 
-    # Discordに送信するリッチなデザイン（1Passwordのフッター付き）
+    # 1Password連携ユーザーと一般ユーザーでフッターの表示を自動切り替え
+    if os.environ.get("OP_SERVICE_ACCOUNT_TOKEN"):
+        footer_text = "Secured by 1Password Secrets Automation"
+    else:
+        footer_text = "Cloudflare Gateway Analyzer"
+
+    # Discordに送信するリッチなデザイン
     payload = {
         "username": "Cloudflare Gateway Analyzer",
         "embeds": [{
@@ -35,7 +40,7 @@ def send_discord_alert(total_queries, blocked_count, top_domains):
                 {"name": "🚫 Blocked", "value": f"`{blocked_count:,}` ({block_rate:.1f}%)", "inline": True},
                 {"name": "🔝 Top Blocked Domains", "value": domains_value, "inline": False}
             ],
-            "footer": {"text": "Secured by 1Password Secrets Automation"}
+            "footer": {"text": footer_text}
         }]
     }
 
@@ -94,7 +99,6 @@ def main():
             """ % (account_id, start_time, end_time)
         }
 
-        # ★ 修正箇所：正しいCloudflare APIのURLです（ここを上書きしないように注意！）
         url = "https://api.cloudflare.com/client/v4/graphql"
         req = urllib.request.Request(url, data=json.dumps(query).encode('utf-8'), method='POST')
         req.add_header('Authorization', f'Bearer {api_token}')
@@ -147,7 +151,6 @@ def main():
         jst_dt_display = "Unknown"
         if utc_dt_str:
             try:
-                # 警告解消に伴う timezone-aware への対応
                 utc_dt = datetime.strptime(utc_dt_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=UTC)
                 jst_dt = utc_dt + timedelta(hours=9)
                 jst_dt_display = jst_dt.strftime('%Y-%m-%d %H:%M:%S')
