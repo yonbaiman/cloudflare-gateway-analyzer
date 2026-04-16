@@ -112,8 +112,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           repository: 'yonbaiman/cloudflare-gateway-analyzer'
-          # 最新の安定版コミットハッシュに固定して実行します
-          ref: "290881b79d704987c2ad0ddb3bc6caf03adca5fa"
+          ref: "ab3b2975f381630a7016af915b6c79f4020c1f0b"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
