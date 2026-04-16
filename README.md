@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://www.python.org/)
-[![1Password](https://img.shields.io/badge/Secured_by-1Password-095aba?logo=1password)](https://1password.com/for-open-source/)
+[![1Password](https://img.shields.io/badge/Secured_by-1Password-095aba?logo=1password)](https://1password.com/)
 
 **Unlock Advanced Observability for Cloudflare Zero Trust. Leveraging GraphQL API for structured security insights.** **Cloudflare Zero Trustの可観測性を拡張する。公式GraphQL APIを活用し、高度なセキュリティ分析を実現します。**
 
