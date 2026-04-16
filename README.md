@@ -47,7 +47,8 @@ Instead of using real private data, this project provides a **Live Demo** genera
 👉 **[View the latest Live Demo Report here](docs/sample-report.md)**
 
 ### 📱 Discord Notification Sample
-*⬇️ (Tip: ここに先ほどスマホに届いたDiscord通知のスクリーンショット画像をアップロードして貼り付けると、Cloudflareへの強力なアピールになります)*
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/e89d6369-01b3-40f5-ac40-ba105b78ab54" />
+
 
 ---
 
