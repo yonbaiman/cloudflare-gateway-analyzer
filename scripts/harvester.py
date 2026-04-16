@@ -5,6 +5,51 @@ from urllib.error import URLError, HTTPError
 from datetime import datetime, timedelta
 import csv
 
+# === 新しく追加するDiscord通知関数 ===
+def send_discord_alert(total_queries, blocked_count, top_domains):
+    """Discordへ解析結果のサマリーを送信する"""
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not webhook_url:
+        print("⚠️ DISCORD_WEBHOOK_URL が設定されていません。通知をスキップします。")
+        return
+
+    # ブロック率の計算
+    block_rate = (blocked_count / total_queries * 100) if total_queries > 0 else 0
+    now_jst = datetime.utcnow() + timedelta(hours=9)
+    date_str = now_jst.strftime("%Y-%m-%d")
+
+    # 表示バグ回避のためバッククォート3つを文字コードから生成
+    code_fence = chr(96) * 3
+    domain_list_str = "\n".join(top_domains) if top_domains else "None"
+    domains_value = f"{code_fence}text\n{domain_list_str}\n{code_fence}"
+
+    # Discordに送信するリッチなデザイン（1Passwordのフッター付き）
+    payload = {
+        "username": "Cloudflare Gateway Analyzer",
+        "embeds": [{
+            "title": "🛡️ Daily Security Insights",
+            "description": f"**Date:** {date_str}\nCloudflare Gateway のログ解析が完了しました。",
+            "color": 3447003,
+            "fields": [
+                {"name": "📊 Total Queries", "value": f"`{total_queries:,}`", "inline": True},
+                {"name": "🚫 Blocked", "value": f"`{blocked_count:,}` ({block_rate:.1f}%)", "inline": True},
+                {"name": "🔝 Top Blocked Domains", "value": domains_value, "inline": False}
+            ],
+            "footer": {"text": "Secured by 1Password Secrets Automation"}
+        }]
+    }
+
+    req = urllib.request.Request(webhook_url, data=json.dumps(payload).encode('utf-8'), method='POST')
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('User-Agent', 'Mozilla/5.0')
+
+    try:
+        with urllib.request.urlopen(req) as res:
+            print("✅ Discord通知の送信に成功しました！")
+    except Exception as e:
+        print(f"❌ Discord通知の送信に失敗しました: {e}")
+# ===================================
+
 def main():
     api_token = os.environ.get('CF_API_TOKEN')
     account_id = os.environ.get('CF_ACCOUNT_ID')
@@ -49,7 +94,7 @@ def main():
             """ % (account_id, start_time, end_time)
         }
 
-        url = "https://api.cloudflare.com/client/v4/graphql"
+        url = "[https://api.cloudflare.com/client/v4/graphql](https://api.cloudflare.com/client/v4/graphql)"
         req = urllib.request.Request(url, data=json.dumps(query).encode('utf-8'), method='POST')
         req.add_header('Authorization', f'Bearer {api_token}')
         req.add_header('Content-Type', 'application/json')
@@ -175,9 +220,13 @@ def main():
     report.append("| :--- | :--- |")
     
     top_global_blocked = sorted(global_domain_blocks.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # === Discord送信用にリストを抽出する処理 ===
+    top_domains_for_discord = []
     if top_global_blocked:
         for domain, count in top_global_blocked:
             report.append(f"| {count:,} | `{domain}` |")
+            top_domains_for_discord.append(f"{domain} ({count:,})")
     else:
         report.append("| 0 | No blocked domains |")
 
@@ -194,6 +243,9 @@ def main():
         print(f"❌ Failed to write CSV: {e}")
 
     print("✅ Report generated successfully!")
+
+    # ====== 最後にDiscordへ通知を送信する処理 ======
+    send_discord_alert(total_queries, total_blocks, top_domains_for_discord)
 
 def write_summary(markdown_content):
     summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
