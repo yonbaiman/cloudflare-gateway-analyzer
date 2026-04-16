@@ -2,10 +2,10 @@ import os
 import json
 import urllib.request
 from urllib.error import URLError, HTTPError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import csv
 
-# === 新しく追加するDiscord通知関数 ===
+# === Discord通知関数 ===
 def send_discord_alert(total_queries, blocked_count, top_domains):
     """Discordへ解析結果のサマリーを送信する"""
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
@@ -15,7 +15,7 @@ def send_discord_alert(total_queries, blocked_count, top_domains):
 
     # ブロック率の計算
     block_rate = (blocked_count / total_queries * 100) if total_queries > 0 else 0
-    now_jst = datetime.utcnow() + timedelta(hours=9)
+    now_jst = datetime.now(UTC) + timedelta(hours=9)
     date_str = now_jst.strftime("%Y-%m-%d")
 
     # 表示バグ回避のためバッククォート3つを文字コードから生成
@@ -41,14 +41,13 @@ def send_discord_alert(total_queries, blocked_count, top_domains):
 
     req = urllib.request.Request(webhook_url, data=json.dumps(payload).encode('utf-8'), method='POST')
     req.add_header('Content-Type', 'application/json')
-    req.add_header('User-Agent', 'Mozilla/5.0')
+    req.add_header('User-Agent', 'Cloudflare-Gateway-Analyzer')
 
     try:
         with urllib.request.urlopen(req) as res:
             print("✅ Discord通知の送信に成功しました！")
     except Exception as e:
         print(f"❌ Discord通知の送信に失敗しました: {e}")
-# ===================================
 
 def main():
     api_token = os.environ.get('CF_API_TOKEN')
@@ -59,7 +58,8 @@ def main():
         exit(1)
 
     all_logs = []
-    now_utc = datetime.utcnow()
+    # 警告を解消するため datetime.now(UTC) を使用
+    now_utc = datetime.now(UTC)
     
     # === 10,000行制限の回避: 24時間を6時間×4回に分けてクエリ ===
     for i in range(4):
@@ -94,7 +94,8 @@ def main():
             """ % (account_id, start_time, end_time)
         }
 
-        url = "[https://api.cloudflare.com/client/v4/graphql](https://api.cloudflare.com/client/v4/graphql)"
+        # ★ 修正箇所：正しいCloudflare APIのURLです（ここを上書きしないように注意！）
+        url = "https://api.cloudflare.com/client/v4/graphql"
         req = urllib.request.Request(url, data=json.dumps(query).encode('utf-8'), method='POST')
         req.add_header('Authorization', f'Bearer {api_token}')
         req.add_header('Content-Type', 'application/json')
@@ -146,7 +147,8 @@ def main():
         jst_dt_display = "Unknown"
         if utc_dt_str:
             try:
-                utc_dt = datetime.strptime(utc_dt_str, '%Y-%m-%dT%H:%M:%SZ')
+                # 警告解消に伴う timezone-aware への対応
+                utc_dt = datetime.strptime(utc_dt_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=UTC)
                 jst_dt = utc_dt + timedelta(hours=9)
                 jst_dt_display = jst_dt.strftime('%Y-%m-%d %H:%M:%S')
                 
