@@ -2,17 +2,20 @@
 from datetime import datetime, timedelta, UTC
 
 # resolverDecision の数値定数
-# 出典: Cloudflare Gateway GraphQL API 実測値
+# 出典: Cloudflare GraphQL API スキーマ イントロスペクション (2026-04-27 確認)
+# AccountGatewayResolverQueriesAdaptiveGroupsDimensions.resolverDecision description より
 RESOLVER_DECISIONS = {
-    1: "Allow",     # 通常の許可
-    2: "Block",     # ブロックポリシーによる遮断
-    3: "Block",     # セーフサーチによる遮断
-    4: "Bypass",    # オーバーライド/例外的な許可
-    5: "Rewrite",   # セーフサーチによる書き換え
-    6: "Block",     # YouTube制限による遮断
-    7: "Rewrite",   # YouTube制限による書き換え
-    8: "Isolate",   # ブラウザ分離
-    9: "Block",     # DNSリバインディング攻撃保護
+    0:  "Unknown",   # unknown
+    1:  "Allow",     # allowedByQueryName
+    2:  "Block",     # blockedByQueryName
+    3:  "Block",     # blockedByCategory
+    4:  "Allow",     # allowedOnNoLocation
+    5:  "Allow",     # allowedOnNoPolicyMatch
+    6:  "Block",     # blockedAlwaysCategory
+    7:  "Override",  # overrideForSafeSearch
+    8:  "Override",  # overrideApplied
+    9:  "Block",     # blockedRule
+    10: "Allow",     # allowedRule
 }
 
 BLOCK_DECISIONS = frozenset({2, 3, 6, 9})
