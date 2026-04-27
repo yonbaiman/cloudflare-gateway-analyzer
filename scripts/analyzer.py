@@ -1,6 +1,22 @@
 # analyzer.py
 from datetime import datetime, timedelta, UTC
 
+# resolverDecision の数値定数
+# 出典: Cloudflare Gateway GraphQL API 実測値
+RESOLVER_DECISIONS = {
+    1: "Allow",     # 通常の許可
+    2: "Block",     # ブロックポリシーによる遮断
+    3: "Block",     # セーフサーチによる遮断
+    4: "Bypass",    # オーバーライド/例外的な許可
+    5: "Rewrite",   # セーフサーチによる書き換え
+    6: "Block",     # YouTube制限による遮断
+    7: "Rewrite",   # YouTube制限による書き換え
+    8: "Isolate",   # ブラウザ分離
+    9: "Block",     # DNSリバインディング攻撃保護
+}
+
+BLOCK_DECISIONS = frozenset({2, 3, 6, 9})
+
 
 def analyze_logs(logs: list) -> dict:
     """
@@ -10,16 +26,16 @@ def analyze_logs(logs: list) -> dict:
         {
             "total_queries": int,
             "total_blocks": int,
-            "hourly_stats": dict,       # {"09:00": {"allow": N, "block": N}, ...}
-            "location_stats": dict,     # ロケーション別統計
+            "hourly_stats": dict,          # {"09:00": {"allow": N, "block": N}, ...}
+            "location_stats": dict,        # ロケーション別統計
             "global_domain_blocks": dict,  # ドメイン別ブロック数
-            "csv_rows": list,           # CSV出力用の行リスト
+            "csv_rows": list,              # CSV出力用の行リスト
             "now_jst": datetime,
             "hours_list": list,
         }
     """
-    now_utc = datetime.now(UTC)
-    now_jst = now_utc + timedelta(hours=9)
+    now_utc  = datetime.now(UTC)
+    now_jst  = now_utc + timedelta(hours=9)
 
     hours_list = [
         (now_jst - timedelta(hours=i)).strftime('%H:00')
@@ -27,11 +43,11 @@ def analyze_logs(logs: list) -> dict:
     ]
     hourly_stats = {h: {'allow': 0, 'block': 0} for h in hours_list}
 
-    location_stats = {}
-    total_queries = 0
-    total_blocks = 0
+    location_stats       = {}
+    total_queries        = 0
+    total_blocks         = 0
     global_domain_blocks = {}
-    csv_rows = []
+    csv_rows             = []
 
     for item in logs:
         utc_dt_str = item['dimensions'].get('datetime', '')
@@ -40,8 +56,8 @@ def analyze_logs(logs: list) -> dict:
         loc        = item['dimensions'].get('locationName', 'Unknown')
         decision   = item['dimensions']['resolverDecision']
 
-        is_block     = decision in [2, 3, 6, 9]
-        decision_str = "Block" if is_block else "Allow"
+        is_block     = decision in BLOCK_DECISIONS
+        decision_str = RESOLVER_DECISIONS.get(decision, f"Unknown({decision})")
 
         total_queries += count
         if is_block:
