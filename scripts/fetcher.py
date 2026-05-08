@@ -18,14 +18,18 @@ def fetch_all_logs(api_token: str, account_id: str) -> list:
 
         print(f"🔍 Fetching {start_time} to {end_time}...")
 
+        # ✅ GraphQL変数を使用（文字列フォーマットによるインジェクションを排除）
+        # 型は実スキーマから確認済み:
+        #   $accountTag: String!  （accountTag フィルターは String）
+        #   $start / $end: Time!  （Cloudflare 独自スカラー、Go time.Time）
         query = {
             "query": """
-            query {
+            query($accountTag: String!, $start: Time!, $end: Time!) {
               viewer {
-                accounts(filter: {accountTag: "%s"}) {
+                accounts(filter: {accountTag: $accountTag}) {
                   gatewayResolverQueriesAdaptiveGroups(
                     limit: 10000,
-                    filter: {datetime_geq: "%s", datetime_leq: "%s"},
+                    filter: {datetime_geq: $start, datetime_leq: $end},
                     orderBy: [datetime_DESC]
                   ) {
                     dimensions {
@@ -39,7 +43,12 @@ def fetch_all_logs(api_token: str, account_id: str) -> list:
                 }
               }
             }
-            """ % (account_id, start_time, end_time)
+            """,
+            "variables": {
+                "accountTag": account_id,
+                "start": start_time,
+                "end": end_time,
+            }
         }
 
         url = "https://api.cloudflare.com/client/v4/graphql"
