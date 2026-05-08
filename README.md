@@ -121,7 +121,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           repository: 'yonbaiman/cloudflare-gateway-analyzer'
-          ref: "71bb7e1786fce1ad6786547fc06083842497502e"
+          ref: "dde9a993e9c2d01ac9b9d4b85b6f52269a01a816"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
