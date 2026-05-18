@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://www.python.org/)
 [![1Password](https://img.shields.io/badge/Secured_by-1Password-095aba?logo=1password)](https://1password.com/)
+[![Dependabot](https://badgen.net/badge/Dependabot/enabled/green?icon=dependabot)](https://dependabot.com)
 
 **A lightweight observability helper for Cloudflare Zero Trust (Free Tier). Using the official GraphQL API within its intended scope.** **Cloudflare Zero Trust（Free Tier）向けの軽量な可視化補助ツール。公式のGraphQL APIを想定された範囲で利用し、日次の可視化サマリーを生成します。**
 
@@ -118,14 +119,14 @@ jobs:
 
     steps:
       - name: Checkout Analyzer Core
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@v6
         with:
           repository: 'yonbaiman/cloudflare-gateway-analyzer'
-          ref: "dde9a993e9c2d01ac9b9d4b85b6f52269a01a816"
+          ref: 'main'
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        uses: actions/setup-python@v6
         with:
           python-version: '3.14'
 
@@ -137,7 +138,7 @@ jobs:
         run: python scripts/harvester.py
 
       - name: Save Secure Logs
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        uses: actions/upload-artifact@v7
         with:
           name: dns-analytics-csv
           path: dns_logs_summary.csv
