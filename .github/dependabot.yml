@@ -15,19 +15,3 @@ updates:
       github-actions:
         patterns:
           - "*"
-
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    labels:
-      - "dependencies"
-      - "python"
-    open-pull-requests-limit: 10
-    groups:
-      pip-dependencies:
-        patterns:
-          - "*"
