@@ -4,6 +4,45 @@ import os
 from datetime import timedelta
 
 
+def _build_period_label(stats: dict) -> str:
+    """
+    Analyzed Period の表示文字列を生成する。
+
+    後方互換:
+      - stats に "period" (=(start_date, end_date)) が無い場合は、
+        従来どおり「now_jst - 1日 ~ now_jst」(=日次バッチの直近24h) を表示。
+      - "period" がある場合(カスタムレポート)は、指定された期間全体を表示。
+    """
+    period = stats.get("period")
+    if period:
+        start, end = period
+        return (f"**Analyzed Period:** JST "
+                f"`{start.strftime('%Y-%m-%d')} ~ {end.strftime('%Y-%m-%d')}`")
+    # 従来動作 (日次バッチ)
+    now_jst = stats["now_jst"]
+    return (f"**Analyzed Period:** JST "
+            f"`{(now_jst - timedelta(days=1)).strftime('%Y-%m-%d %H:%M')} "
+            f"~ {now_jst.strftime('%m-%d %H:%M')}`")
+
+
+def _build_labels(stats: dict) -> tuple[str, str]:
+    """
+    見出しと Query Trends ラベルを粒度に応じて返す。
+
+    後方互換:
+      - "granularity" が無い/"hourly" の場合は従来の "Daily Insights" /
+        "24-Hour Query Trends" を維持。
+      - "daily" の場合は "Daily Query Trends" に切り替える。
+    """
+    gran = stats.get("granularity", "hourly")
+    heading = "### 🛡️ Cloudflare Gateway Insights"
+    if gran == "daily":
+        trends = "#### 📈 Daily Query Trends (JST)"
+    else:
+        trends = "#### 📈 24-Hour Query Trends (JST)"
+    return heading, trends
+
+
 def build_markdown_report(stats: dict) -> tuple[str, list]:
     """
     集計結果からMarkdownレポートを生成する。
@@ -16,14 +55,15 @@ def build_markdown_report(stats: dict) -> tuple[str, list]:
     hourly_stats         = stats["hourly_stats"]
     location_stats       = stats["location_stats"]
     global_domain_blocks = stats["global_domain_blocks"]
-    now_jst              = stats["now_jst"]
     hours_list           = stats["hours_list"]
 
     block_rate = (total_blocks / total_queries * 100) if total_queries > 0 else 0
 
+    heading, trends_label = _build_labels(stats)
+
     report = [
-        "### 🛡️ Cloudflare Gateway Daily Insights",
-        f"**Analyzed Period:** JST `{(now_jst - timedelta(days=1)).strftime('%Y-%m-%d %H:%M')} ~ {now_jst.strftime('%m-%d %H:%M')}`",
+        heading,
+        _build_period_label(stats),
         "",
         "#### 📊 Traffic Overview",
         f"- **Total Queries**: {total_queries:,}",
@@ -37,7 +77,7 @@ def build_markdown_report(stats: dict) -> tuple[str, list]:
     block_data_str = "[" + ", ".join(str(hourly_stats[h]['block']) for h in hours_list) + "]"
 
     report += [
-        "#### 📈 24-Hour Query Trends (JST)",
+        trends_label,
         "```mermaid",
         "xychart-beta",
         '    title "DNS Queries (Allow vs Block)"',
