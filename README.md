@@ -231,6 +231,108 @@ It reads the accumulated `history/dns_history.csv`, re-aggregates the requested 
 入力：`start_date` / `end_date` / `location` / `granularity`（`auto` | `hourly` | `daily`）。
 蓄積済みの `history/dns_history.csv` を読み込んで再集計し、Mermaid付き Step Summary と `custom_report.csv`（Artifact）を出力します。
 
+> ℹ️ This workflow checks out the public repo into `core/` and your private repo into `private/`, then stages `history/dns_history.csv` where the analyzer expects it. The four `INPUT_*` env vars map the workflow inputs to `scripts/report_custom.py`.
+> このワークフローは公開リポを `core/`、privateリポを `private/` にチェックアウトし、解析コアが参照する位置に履歴CSVを配置します。`INPUT_*` の4つの環境変数が入力を `scripts/report_custom.py` に渡します。
+
+<details>
+<summary><b>📄 Example: <code>.github/workflows/custom-report.yml</code> (click to expand)</b></summary>
+
+```yaml
+name: Custom DNS Report (On-Demand)
+
+# Manual run only. Enter the range / location from the GitHub Actions screen.
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: 'Start date (JST, YYYY-MM-DD)'
+        required: true
+        type: string
+        default: '2026-06-01'
+      end_date:
+        description: 'End date (JST, YYYY-MM-DD, inclusive)'
+        required: true
+        type: string
+        default: '2026-06-07'
+      location:
+        description: 'Location name (empty = all)'
+        required: false
+        type: string
+        default: ''
+      granularity:
+        description: 'Aggregation granularity'
+        required: false
+        type: choice
+        options:
+          - auto
+          - hourly
+          - daily
+        default: auto
+
+permissions:
+  contents: read
+
+jobs:
+  custom-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # 1. Checkout the analyzer core (public repo) into core/
+      #    For stricter reproducibility, consider pinning ref to a commit SHA in production.
+      - name: Checkout Analyzer Core
+        uses: actions/checkout@v4
+        with:
+          repository: 'yonbaiman/cloudflare-gateway-analyzer'
+          ref: 'main'
+          path: core
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Checkout the accumulated history (this private repo) into private/
+      - name: Checkout History (private)
+        uses: actions/checkout@v4
+        with:
+          path: private
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      # 3. Stage the history CSV where the analyzer expects it (core/history/)
+      #    If missing, the workflow only warns (report_custom.py exits with "No data").
+      - name: Stage history CSV
+        run: |
+          mkdir -p core/history
+          if [ -f private/history/dns_history.csv ]; then
+            cp private/history/dns_history.csv core/history/dns_history.csv
+            echo "✅ history CSV staged."
+          else
+            echo "⚠️ private/history/dns_history.csv not found (will report 'No data')."
+          fi
+
+      # 4. Generate the custom report (run with core/ as the working directory)
+      - name: Run Custom Report
+        working-directory: core
+        env:
+          INPUT_START:    ${{ inputs.start_date }}
+          INPUT_END:      ${{ inputs.end_date }}
+          INPUT_LOCATION: ${{ inputs.location }}
+          INPUT_GRAN:     ${{ inputs.granularity }}
+        run: python scripts/report_custom.py
+
+      # 5. Save the generated CSV as an artifact
+      - name: Upload report CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-report-csv
+          path: core/custom_report.csv
+          retention-days: 7
+          if-no-files-found: ignore
+```
+
+</details>
+
 ### 5. View Your Reports / 結果の確認方法
 1. Go to the **Actions** tab in your private repository. (作成した非公開リポジトリの **Actions** タブを開きます。)
 2. Click the latest run to view the **Step Summary**. (最新の実行結果をクリックし、**Step Summary** を確認します。)
