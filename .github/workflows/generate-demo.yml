@@ -18,7 +18,7 @@ jobs:
       # 1. Checkout repository（SHA pin）
       # ======================================================
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -26,7 +26,7 @@ jobs:
       # 2. Setup Python（v6.2.0 → SHA pin）
       # ======================================================
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.14'
 
@@ -40,7 +40,7 @@ jobs:
       # 4. Commit and push changes（v7.1.0 → SHA pin）
       # ======================================================
       - name: Commit and Push if changed
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d
         with:
           commit_message: "docs: Update live demo report"
           file_pattern: docs/sample-report.md
